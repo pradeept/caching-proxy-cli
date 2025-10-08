@@ -1,0 +1,22 @@
+{
+  "name": "caching-proxy-cli",
+  "module": "index.ts",
+  "type": "module",
+  "bin": {
+    "caching-proxy": "./index.ts"
+  },
+  "scripts": {
+    "dev": "bun run --watch index.ts "
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "commander": "^14.0.1",
+    "nanospinner": "^1.2.2",
+    "redis": "^5.8.3"
+  }
+}
