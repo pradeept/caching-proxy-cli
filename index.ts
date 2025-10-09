@@ -10,6 +10,7 @@
 import { Command } from "commander";
 import { isRedisAvailable, isUrlValid, validatePort } from "./utils/validator";
 import { createSpinner } from "nanospinner";
+import http from "node:http";
 
 const program = new Command();
 
@@ -37,7 +38,7 @@ program.parse();
 const app = async () => {
   const options = program.opts();
   const PORT: string = options.port;
-  const URL: string = options.url;
+  const DESTINATION_URL: string = options.url;
   const REDIS_HOST: string = options.redis.split(":")[0];
   const REDIS_PORT: string = options.redis.split(":")[1];
 
@@ -51,13 +52,11 @@ const app = async () => {
     return;
   }
   // validate the url
-  const result = await isUrlValid(URL);
+  const result = await isUrlValid(DESTINATION_URL);
   if (!result.success) {
     validationSpinner.error(message);
     return;
   }
-
-  // close the spinner with success
 
   const isAvailable = await isRedisAvailable(REDIS_HOST, REDIS_PORT);
   if (!isAvailable.success) {
@@ -66,8 +65,55 @@ const app = async () => {
   }
   const client = isAvailable.client;
 
-  // SOME PROMISE IS NOT RESOLVING PROPERLY
+  // close spinner with success (check mark)
   validationSpinner.success();
+
+  // start the proxy server
+  await proxyServer("localhost", PORT, DESTINATION_URL);
+
+  // redis connection cleanup (important)
+  process.on("SIGINT", () => {
+    try {
+      client?.destroy();
+      console.log("Redis client disconnected!");
+      process.exit(0);
+    } catch (e) {
+      console.log("Failed to disconnect redis client!");
+      process.exit(1);
+    }
+  });
 };
 
 app();
+
+const proxyServer = async (
+  hostaname: string,
+  port: string,
+  destination: string
+) => {
+  const server = http.createServer((client_req, client_res) => {
+    let options = {
+      hostaname: client_req.url,
+      port: 80, //http
+      path: destination,
+      method: client_req.method,
+      headers: client_req.headers,
+    };
+    const proxy = http.request(options, (res) => {
+      console.log(res.statusCode);
+      client_res.writeHead(res.statusCode!, res.headers);
+      res.pipe(client_res, { end: true });
+    });
+
+    client_req.pipe(proxy, { end: true });
+  });
+
+  // @ts-ignore
+  server.listen(Number(port), hostaname, () => {
+    console.log(`- Proxy server started at http://${hostaname}:${port}`);
+  });
+  server.on("error", () => {
+    console.error("Failed to start the proxy server!");
+  });
+
+};

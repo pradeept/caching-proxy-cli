@@ -57,7 +57,7 @@ const isUrlValid = (
       socket.end();
     });
 
-    socket.on("error", () => {
+    socket.on("error", (e) => {
       // if there is an error in reaching the url
       resolve({ success: false, message: "URL is not valid!" });
     });
@@ -76,16 +76,15 @@ const isRedisAvailable = async (
   hostname: string,
   port: string
 ): Promise<{ success: boolean; message: string; client?: RedisClientType }> => {
-  return new Promise((resolve) => {
-    createClient()
-      .on("error", (err) =>
-        resolve({ success: false, message: "Failed to connect to redis!" })
-      )
-      .connect()
-      .then((conn) => {
-        resolve({ success: true, message: "Connected!", client: conn });
-      });
-  });
+  //create a client
+  const client = createClient({ url: `redis://${hostname}:${port}` });
+  // connect to the client
+  try {
+    await client.connect();
+    return { success: true, message: "Connected!", client };
+  } catch (e) {
+    return { success: false, message: "Failed to connect to redis!" };
+  }
 };
 
 export { validatePort, isUrlValid, isRedisAvailable };
