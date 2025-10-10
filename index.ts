@@ -11,6 +11,7 @@ import { Command } from "commander";
 import { isRedisAvailable, isUrlValid, validatePort } from "./utils/validator";
 import { createSpinner } from "nanospinner";
 import http from "node:http";
+import url from "node:url";
 
 const program = new Command();
 
@@ -48,19 +49,19 @@ const app = async () => {
   // validate the port
   const { success, message } = await validatePort(PORT);
   if (!success) {
-    validationSpinner.error({text:message});
+    validationSpinner.error({ text: message });
     return;
   }
   // validate the url
   const result = await isUrlValid(DESTINATION_URL);
   if (!result.success) {
-    validationSpinner.error({text:result.message});
+    validationSpinner.error({ text: result.message });
     return;
   }
 
   const isAvailable = await isRedisAvailable(REDIS_HOST, REDIS_PORT);
   if (!isAvailable.success) {
-    validationSpinner.error({text:isAvailable.message});
+    validationSpinner.error({ text: isAvailable.message });
     return;
   }
   const client = isAvailable.client;
@@ -87,15 +88,17 @@ const app = async () => {
 app();
 
 const proxyServer = async (
-  hostaname: string,
+  hostname: string,
   port: string,
   destination: string
 ) => {
   const server = http.createServer((client_req, client_res) => {
+    console.log("url: ", destination);
+    const parsedDestinationUrl = url.parse(destination);
     let options = {
-      hostaname: client_req.url,
-      port: 80, //http
-      path: destination,
+      hostaname: parsedDestinationUrl.hostname,
+      port: parsedDestinationUrl.protocol === "https:" ? 443 : 80,
+      path: client_req.url,
       method: client_req.method,
       headers: client_req.headers,
     };
@@ -103,17 +106,19 @@ const proxyServer = async (
       console.log(res.statusCode);
       client_res.writeHead(res.statusCode!, res.headers);
       res.pipe(client_res, { end: true });
+      res.on('error',(e)=>{
+        console.error(e)
+      })
     });
 
     client_req.pipe(proxy, { end: true });
   });
 
   // @ts-ignore
-  server.listen(Number(port), hostaname, () => {
-    console.log(`- Proxy server started at http://${hostaname}:${port}`);
+  server.listen(Number(port), hostname, () => {
+    console.log(`- Proxy server started at http://${hostname}:${port}`);
   });
   server.on("error", () => {
     console.error("Failed to start the proxy server!");
   });
-
 };
