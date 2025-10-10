@@ -48,19 +48,19 @@ const app = async () => {
   // validate the port
   const { success, message } = await validatePort(PORT);
   if (!success) {
-    validationSpinner.error(message);
+    validationSpinner.error({text:message});
     return;
   }
   // validate the url
   const result = await isUrlValid(DESTINATION_URL);
   if (!result.success) {
-    validationSpinner.error(message);
+    validationSpinner.error({text:result.message});
     return;
   }
 
   const isAvailable = await isRedisAvailable(REDIS_HOST, REDIS_PORT);
   if (!isAvailable.success) {
-    validationSpinner.error(isAvailable.message);
+    validationSpinner.error({text:isAvailable.message});
     return;
   }
   const client = isAvailable.client;

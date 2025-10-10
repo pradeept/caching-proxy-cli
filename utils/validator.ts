@@ -1,5 +1,8 @@
 import net from "node:net";
 import { createClient, type RedisClientType } from "@redis/client";
+import https from "node:https";
+import http from "node:http";
+import url from "node:url";
 
 const validatePort = async (
   port: string
@@ -34,41 +37,55 @@ const isPortAvailable = async (port: number): Promise<boolean> => {
   });
 };
 
-const isUrlValid = (
+const isUrlValid = async (
   targetUrl: string
 ): Promise<{ success: boolean; message: string }> => {
-  if (targetUrl.includes("http://") || targetUrl.includes("https://")) {
-    return new Promise((resolve) =>
-      resolve({
-        success: false,
-        message:
-          "Do not include the protocol ('http://' or 'https://') in the URL)",
-      })
-    );
+  const parsedUrl = url.parse(targetUrl);
+  if (!parsedUrl.host || !parsedUrl.protocol || !parsedUrl.slashes) {
+    return {
+      success: false,
+      message: "Invalid URL!",
+    };
   }
+
+  // options to make a request
+  const options = {
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.protocol === "https:" ? 443 : 80,
+    path: parsedUrl.path,
+  };
+
   return new Promise((resolve) => {
-    const host = targetUrl;
-    const port = 80;
+    // make a request based on port
+    if (options.port === 80) {
+      // HTTP request
+      const httpRequest = http.get(options, (r) => {
+        resolve({
+          success: r.statusCode === 200,
+          message: r.statusMessage!,
+        });
+      });
 
-    // create a tcp connection
-    const socket = net.createConnection(port, host, () => {
-      // if the url is reached
-      resolve({ success: true, message: "Valid!" });
-      socket.end();
-    });
+      httpRequest.on("error", (_) => {
+        resolve({ success: false, message: "Given URL is not reachable!" });
+      });
 
-    socket.on("error", (e) => {
-      // if there is an error in reaching the url
-      resolve({ success: false, message: "URL is not valid!" });
-    });
+      httpRequest.end();
+    } else {
+      // HTTPS request
+      const httpsRequest = https.get(options, (r) => {
+        resolve({
+          success: r.statusCode === 200,
+          message: r.statusMessage!,
+        });
+      });
 
-    socket.on("timeout", () => {
-      // if timeout occurs while reaching the url
-      socket.end();
-      resolve({ success: false, message: "URL is not valid!" });
-    });
+      httpsRequest.on("error", (_) => {
+        resolve({ success: false, message: "Given URL is not reachable!" });
+      });
 
-    socket.setTimeout(5000); // 5 seconds timeout
+      httpsRequest.end();
+    }
   });
 };
 
