@@ -89,19 +89,5 @@ const isUrlValid = async (
   });
 };
 
-const isRedisAvailable = async (
-  hostname: string,
-  port: string
-): Promise<{ success: boolean; message: string; client?: RedisClientType }> => {
-  //create a client
-  const client = createClient({ url: `redis://${hostname}:${port}` });
-  // connect to the client
-  try {
-    await client.connect();
-    return { success: true, message: "Connected!", client };
-  } catch (e) {
-    return { success: false, message: "Failed to connect to redis!" };
-  }
-};
 
-export { validatePort, isUrlValid, isRedisAvailable };
+export { validatePort, isUrlValid };

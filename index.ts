@@ -7,34 +7,14 @@
     3) --redis: redis url with port <hostname:port>
 */
 
-import { Command } from "commander";
-import { isRedisAvailable, isUrlValid, validatePort } from "./utils/validator";
+import { isUrlValid, validatePort } from "./utils/validator";
 import { createSpinner } from "nanospinner";
-import http from "node:http";
-import url from "node:url";
+import { proxyServer } from "./services/proxyService";
+import { cli } from "./cli";
+import { redis } from "./configs/redis";
+import { Cache } from "./services/cacheService";
 
-const program = new Command();
-
-program
-  .name("caprox")
-  .description(
-    "A CLI proxy server with caching capablity.\nAuthor: Pradeep Tarakar(https://pradeept.dev)."
-  )
-  .version("1.0.0");
-
-// set options
-program
-  .requiredOption("-p, --port <number>", "Port for proxy server")
-  .requiredOption(
-    "-u, --url <URL>",
-    "URL of the server to which requests are forwarded"
-  )
-  .requiredOption(
-    "-r, --redis <hostname:port>",
-    "Provide the redis <hostname:port>"
-  );
-
-program.parse();
+const program = cli();
 
 const app = async () => {
   const options = program.opts();
@@ -42,6 +22,7 @@ const app = async () => {
   const DESTINATION_URL: string = options.url;
   const REDIS_HOST: string = options.redis.split(":")[0];
   const REDIS_PORT: string = options.redis.split(":")[1];
+  const CLEAR_CACHE: true | undefined = options.clear;
 
   // spinner
   const validationSpinner = createSpinner("Validating the arguments").start();
@@ -59,66 +40,40 @@ const app = async () => {
     return;
   }
 
-  const isAvailable = await isRedisAvailable(REDIS_HOST, REDIS_PORT);
-  if (!isAvailable.success) {
-    validationSpinner.error({ text: isAvailable.message });
+  const redisClient = await redis(REDIS_HOST, REDIS_PORT);
+  if (!redisClient) {
+    validationSpinner.error("Falied to connect to the redis server :(");
     return;
+  } else {
+    validationSpinner.success({ text: "Redis client connected!" });
   }
-  const client = isAvailable.client;
 
-  // close spinner with success (check mark)
-  validationSpinner.success();
+  // create cache
+  const cacheStore = new Cache(redisClient);
+
+  // clear cache if --clear is specified
+  if(CLEAR_CACHE){
+    const isCleared = await cacheStore.flushKeys()
+    if(isCleared)
+      console.log("Cached data cleared successfully!");
+    else
+      console.log("Failed to clear the cached data :(")
+  }
 
   // start the proxy server
-  await proxyServer("localhost", PORT, DESTINATION_URL);
+  await proxyServer(PORT, DESTINATION_URL, cacheStore);
 
   // redis connection cleanup (important)
   process.on("SIGINT", () => {
     try {
-      client?.destroy();
+      redisClient?.destroy();
       console.log("Redis client disconnected!");
       process.exit(0);
     } catch (e) {
-      console.log("Failed to disconnect redis client!");
+      console.log("Failed to disconnect the redis client :(");
       process.exit(1);
     }
   });
 };
 
 app();
-
-const proxyServer = async (
-  hostname: string,
-  port: string,
-  destination: string
-) => {
-  const server = http.createServer((client_req, client_res) => {
-    console.log("url: ", destination);
-    const parsedDestinationUrl = url.parse(destination);
-    let options = {
-      hostaname: parsedDestinationUrl.hostname,
-      port: parsedDestinationUrl.protocol === "https:" ? 443 : 80,
-      path: client_req.url,
-      method: client_req.method,
-      headers: client_req.headers,
-    };
-    const proxy = http.request(options, (res) => {
-      console.log(res.statusCode);
-      client_res.writeHead(res.statusCode!, res.headers);
-      res.pipe(client_res, { end: true });
-      res.on('error',(e)=>{
-        console.error(e)
-      })
-    });
-
-    client_req.pipe(proxy, { end: true });
-  });
-
-  // @ts-ignore
-  server.listen(Number(port), hostname, () => {
-    console.log(`- Proxy server started at http://${hostname}:${port}`);
-  });
-  server.on("error", () => {
-    console.error("Failed to start the proxy server!");
-  });
-};
