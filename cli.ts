@@ -12,16 +12,16 @@ export const cli = () => {
 
   // set options
   program
-    .requiredOption("-p, --port <number>", "Port for proxy server")
+    .requiredOption("-P, --port <number>", "Port for proxy server")
     .requiredOption(
-      "-u, --url <URL>",
+      "-U, --url <URL>",
       "URL of the server to which requests are forwarded"
     )
     .requiredOption(
-      "-r, --redis <hostname:port>",
+      "-R, --redis <hostname:port>",
       "Provide the redis <hostname:port>"
     )
-    .option("-c, --clear", "Clear cached responses");
+    .option("-C, --clear", "Clear cached responses");
 
   program.parse();
   return program;

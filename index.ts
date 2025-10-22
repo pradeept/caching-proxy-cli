@@ -5,6 +5,7 @@
     1) --port: on which the proxy server will run
     2) --origin <url> : is the actual server to which requests will be forwarded.
     3) --redis: redis url with port <hostname:port>
+    4) --clear: flush all stored cache
 */
 
 import { isUrlValid, validatePort } from "./utils/validator";
@@ -40,6 +41,7 @@ const app = async () => {
     return;
   }
 
+  // create a redis connection
   const redisClient = await redis(REDIS_HOST, REDIS_PORT);
   if (!redisClient) {
     validationSpinner.error("Falied to connect to the redis server :(");
@@ -48,7 +50,7 @@ const app = async () => {
     validationSpinner.success({ text: "Redis client connected!" });
   }
 
-  // create cache
+  // create cache store
   const cacheStore = new Cache(redisClient);
 
   // clear cache if --clear is specified
