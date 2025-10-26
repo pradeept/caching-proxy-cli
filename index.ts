@@ -1,13 +1,5 @@
 #!/usr/bin/env bun
 
-// Options
-/*
-    1) --port: on which the proxy server will run
-    2) --origin <url> : is the actual server to which requests will be forwarded.
-    3) --redis: redis url with port <hostname:port>
-    4) --clear: flush all stored cache
-*/
-
 import { isUrlValid, validatePort } from "./utils/validator";
 import { createSpinner } from "nanospinner";
 import { proxyServer } from "./services/proxyService";
