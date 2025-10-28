@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    tags: 
+      - '*'
   # pull_request:
   #   types: [closed]
   #   branches:
@@ -34,8 +36,6 @@ jobs:
       - name: Bump app version as per the tag
         run: bun pm version from-git
 
-      - name: Npm Login
-        run: npm install -g npm@latest
       - name: Publish to npm using OIDC
         run: npm publish
         
