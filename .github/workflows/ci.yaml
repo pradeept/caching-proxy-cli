@@ -10,7 +10,6 @@ on:
 permissions: 
   id-token: write #for OIDC
   contents: read
-  
 
 jobs:
   build: 
@@ -29,7 +28,6 @@ jobs:
         run: |
           git config user.name ${{secrets.GH_USERNAME}}
           git config user.email ${{secrets.GH_EMAIL}}
-          npm version from-git
 
       # commit message should include a valid tag
       # for pushing with tags use --follow-tags
