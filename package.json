@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.1.0",
   "repository": {
-    "url": "https://github.comp/pradeept/caching-proxy-cli"
+    "url": "https://github.com/pradeept/caching-proxy-cli"
   },
   "bin": {
     "caching-proxy-cli": "index.ts"
