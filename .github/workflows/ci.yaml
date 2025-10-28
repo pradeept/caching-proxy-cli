@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  # pull_request:
+  #   types: [closed]
+  #   branches:
+  #     - main
+
+permissions: 
+  id-token: write #for OIDC
+  contents: read
+  
+
+jobs:
+  build: 
+    runs-on: 'ubuntu-latest'
+    # if: ${{github.event.pull_request.merged}} 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Configure name and email
+        run: |
+          git config user.name ${{secrets.GH_USERNAME}}
+          git config user.email ${{secrets.GH_EMAIL}}
+          npm version from-git
+
+      # commit message should include a valid tag
+      # for pushing with tags use --follow-tags
+      - name: Bump app version as per the tag
+        run: bun pm version from-git
+
+      - name: Npm Login
+        run: npm install -g npm@latest
+      - name: Publish to npm using OIDC
+        run: npm publish
+        
