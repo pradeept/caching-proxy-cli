@@ -4,7 +4,7 @@
   "type": "module",
   "version": "0.1.0",
   "bin": {
-    "caching-proxy": "./index.ts"
+    "caching-proxy-cli": "./index.ts"
   },
   "scripts": {
     "dev": "bun run --watch index.ts "
