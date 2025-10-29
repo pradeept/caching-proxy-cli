@@ -1,3 +1,6 @@
+# How version bumping and publishing works?
+# Developer creates a tag with correct version number, 
+# attaches to the latest commit & pushes to the main branch
 name: CI
 
 on:
@@ -20,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{secrets.PAT_TOKEN}}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -39,10 +44,14 @@ jobs:
       # commit message should include a valid tag
       # for pushing with tags use --follow-tags
       - name: Bump app version as per the tag
-        run: bun pm version from-git
+        run: |
+          bun pm version from-git -m "chore: update version"
 
       - name: Publish to npm using OIDC
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Sync with repo 
+        run: git push origin main 
         
