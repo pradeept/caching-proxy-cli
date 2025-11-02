@@ -53,5 +53,5 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
       - name: Sync with repo 
-        run: git push origin main 
+        run: git push origin HEAD:main 
         
