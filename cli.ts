@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { version } from "./package.json";
 
 export const cli = () => {
   const program = new Command();
@@ -8,7 +9,7 @@ export const cli = () => {
     .description(
       "A CLI proxy server with caching capablity.\nAuthor: Pradeep Tarakar(https://pradeept.dev)."
     )
-    .version("1.0.0");
+    .version(version);
 
   // set options
   program
