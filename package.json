@@ -2,7 +2,7 @@
   "name": "caching-proxy-cli",
   "module": "index.ts",
   "type": "module",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "repository": {
     "url": "git+https://github.com/pradeept/caching-proxy-cli.git"
   },
