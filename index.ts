@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
-import { isUrlValid, validatePort } from "./utils/validator";
+import { isUrlValid, validatePort } from "./src/utils/validator";
 import { createSpinner } from "nanospinner";
-import { proxyServer } from "./services/proxyService";
+import { proxyServer } from "./src/services/proxyService";
 import { cli } from "./cli";
-import { redis } from "./configs/redis";
-import { Cache } from "./services/cacheService";
+import { redis } from "./src/configs/redis";
+import { Cache } from "./src/services/cacheService";
 
 const program = cli();
 
@@ -46,12 +46,10 @@ const app = async () => {
   const cacheStore = new Cache(redisClient);
 
   // clear cache if --clear is specified
-  if(CLEAR_CACHE){
-    const isCleared = await cacheStore.flushKeys()
-    if(isCleared)
-      console.log("Cached data cleared successfully!");
-    else
-      console.log("Failed to clear the cached data :(")
+  if (CLEAR_CACHE) {
+    const isCleared = await cacheStore.flushKeys();
+    if (isCleared) console.log("Cached data cleared successfully!");
+    else console.log("Failed to clear the cached data :(");
   }
 
   // start the proxy server
